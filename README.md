@@ -13,6 +13,8 @@ curl -X POST http://localhost:8080/game - создает новую игру. В
 
 curl -X GET http://localhost:8080/game/{id} - получить статус игры.
 
+При {id} равным "123":
+
 curl -X POST http://localhost:8080/game/123 \ -H "Content-Type: application/json" \
   -d '{
     "field": [
