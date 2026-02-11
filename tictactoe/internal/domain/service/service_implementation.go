@@ -22,8 +22,8 @@ func NewGameService(repo repository.GameRepository, algo MinimaxAlgorithm) GameS
 	}
 }
 
-func (s *GameServiceImpl) GetNextMove(ctx context.Context, gameID uuid.UUID) (*model.Game, error) {
-	game, err := s.repo.Get(ctx, gameID)
+func (s *GameServiceImpl) GetNextMove(ctx context.Context, gameID uuid.UUID, userID uuid.UUID) (*model.Game, error) {
+	game, err := s.repo.Get(ctx, gameID, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get game: %w", err)
 	}
@@ -36,7 +36,7 @@ func (s *GameServiceImpl) GetNextMove(ctx context.Context, gameID uuid.UUID) (*m
 
 	if winner := game.CheckWinner(); winner != 0 {
         if winner == 1 {
-            game.State = model.StatePlayerWon
+            game.State = model.StatePlayerXWon
         } else {
             game.State = model.StateAIWon
         }
@@ -51,8 +51,8 @@ func (s *GameServiceImpl) GetNextMove(ctx context.Context, gameID uuid.UUID) (*m
 	return game, nil
 }
 
-func (s *GameServiceImpl) ValidateField(ctx context.Context, gameID uuid.UUID, newField model.GameField) (bool, error) {
-    originalGame, err := s.repo.Get(ctx, gameID)
+func (s *GameServiceImpl) ValidateField(ctx context.Context, gameID uuid.UUID, userID uuid.UUID, newField model.GameField) (bool, error) {
+    originalGame, err := s.repo.Get(ctx, gameID, userID)
     if err != nil {
         return false, fmt.Errorf("failed to get game: %w", err)
     }
@@ -99,8 +99,8 @@ func (s *GameServiceImpl) isValidContinuation(oldField, newField model.GameField
     return true
 }
 
-func (s *GameServiceImpl) GetGameState(ctx context.Context, gameID uuid.UUID) (string, error) {
-	game, err := s.repo.Get(ctx, gameID)
+func (s *GameServiceImpl) GetGameState(ctx context.Context, gameID uuid.UUID, userID uuid.UUID) (string, error) {
+	game, err := s.repo.Get(ctx, gameID, userID)
 	if err != nil {
 		return "", fmt.Errorf("failed to get game: %w", err)
 	}
@@ -108,12 +108,16 @@ func (s *GameServiceImpl) GetGameState(ctx context.Context, gameID uuid.UUID) (s
 	return game.State, nil
 }
 
-func (s *GameServiceImpl) MakePlayerMove(ctx context.Context, gameID uuid.UUID, row, col, player int) (*model.Game, error) {
-	game, err := s.repo.Get(ctx, gameID)
+func (s *GameServiceImpl) MakePlayerMove(ctx context.Context, gameID uuid.UUID, userID uuid.UUID, row, col, player int) (*model.Game, error) {
+	game, err := s.repo.Get(ctx, gameID, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get game: %w", err)
 	}
 	
+	if game.State == model.StateWaitingForPlayer {
+		return nil, fmt.Errorf("game is not started yet")
+	}
+
 	if game.State != model.StateInProgress {
 		return nil, fmt.Errorf("game is already finished")
 	}
@@ -124,9 +128,13 @@ func (s *GameServiceImpl) MakePlayerMove(ctx context.Context, gameID uuid.UUID, 
 
 	if winner := game.CheckWinner(); winner != 0 {
         if winner == 1 {
-            game.State = model.StatePlayerWon
+            game.State = model.StatePlayerXWon
         } else {
-            game.State = model.StateAIWon
+			if game.Opponent == model.HumanOpponent {
+				game.State = model.StatePlayerOWon
+			} else {
+            	game.State = model.StateAIWon
+			}
         }
     } else if game.IsFull() {
         game.State = model.StateDraw
@@ -139,11 +147,7 @@ func (s *GameServiceImpl) MakePlayerMove(ctx context.Context, gameID uuid.UUID, 
 	return game, nil
 }
 
-func (s *GameServiceImpl) CreateGame(ctx context.Context, size int) (*model.Game, error) {
-	if size < 3 || size > 10 {
-		return nil, fmt.Errorf("invalid size: must be between 3 and 10")
-	}
-	
+func (s *GameServiceImpl) CreateGame(ctx context.Context, userID uuid.UUID, size int, opponent string) (*model.Game, error) {
 	field := make(model.GameField, size)
 	for i := range field {
 		field[i] = make([]int, size)
@@ -151,12 +155,19 @@ func (s *GameServiceImpl) CreateGame(ctx context.Context, size int) (*model.Game
 	
 	game := &model.Game{
 		ID:         uuid.New(),
+		UserID: userID,
+		User2ID: uuid.Nil,
 		Field:      field,
-		State:      model.StateInProgress,
+		State:      model.StateWaitingForPlayer,
 		PlayerTurn: 1,
 		Size:       size,
 		CreatedAt:  time.Now(),
 		UpdatedAt:  time.Now(),
+		Opponent: opponent,
+	}
+
+	if opponent == model.AIOpponent {
+		game.State = model.StateInProgress
 	}
 	
 	if err := s.repo.Save(ctx, game); err != nil {
@@ -166,8 +177,24 @@ func (s *GameServiceImpl) CreateGame(ctx context.Context, size int) (*model.Game
 	return game, nil
 }
 
-func (s *GameServiceImpl) GetGame(ctx context.Context, gameID uuid.UUID) (*model.Game, error) {
-	return s.repo.Get(ctx, gameID)
+func (s *GameServiceImpl) GetGame(ctx context.Context, gameID uuid.UUID, userID uuid.UUID) (*model.Game, error) {
+	return s.repo.Get(ctx, gameID, userID)
+}
+
+func (s *GameServiceImpl) GetUserIdByGameId(ctx context.Context, gameID uuid.UUID) (uuid.UUID, error) {
+	return s.repo.GetUserIdByGameId(ctx, gameID)
+}
+
+func (s *GameServiceImpl) UpdateAfterJoin(ctx context.Context, game *model.Game) error {
+	return s.repo.UpdateAfterJoin(ctx, game)
+}
+
+func (s *GameServiceImpl) GetWaitingGames(ctx context.Context) ([]*model.WaitingGames, error) {
+	return s.repo.GetWaitingGames(ctx)
+}
+
+func (s *GameServiceImpl) GetPublicUserInfoById(ctx context.Context, userID uuid.UUID) (*model.PublicUserInfo, error) {
+	return s.repo.GetPublicUserInfoById(ctx, userID)
 }
 
 func (s *GameServiceImpl) FindBestMove(game *model.Game) (row, col int) {

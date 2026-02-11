@@ -7,12 +7,18 @@ import (
 )
 
 type GameService interface {
-	GetNextMove(ctx context.Context, gameID uuid.UUID) (*model.Game, error)
-	ValidateField(ctx context.Context, gameID uuid.UUID, field model.GameField) (bool, error)
-	GetGameState(ctx context.Context, gameID uuid.UUID) (string, error)
-	MakePlayerMove(ctx context.Context, gameID uuid.UUID, row, col, player int) (*model.Game, error)
-    CreateGame(ctx context.Context, size int) (*model.Game, error) 
-    GetGame(ctx context.Context, gameID uuid.UUID) (*model.Game, error)
+	GetNextMove(ctx context.Context, gameID uuid.UUID, userID uuid.UUID) (*model.Game, error)
+	ValidateField(ctx context.Context, gameID uuid.UUID, userID uuid.UUID, field model.GameField) (bool, error)
+	GetGameState(ctx context.Context, gameID uuid.UUID, userID uuid.UUID) (string, error)
+	MakePlayerMove(ctx context.Context, gameID uuid.UUID, userID uuid.UUID, row, col, player int) (*model.Game, error)
+    CreateGame(ctx context.Context, userID uuid.UUID, size int, opponent string) (*model.Game, error) 
+    GetGame(ctx context.Context, gameID uuid.UUID, userID uuid.UUID) (*model.Game, error)
+
+	GetUserIdByGameId(ctx context.Context, gameID uuid.UUID) (uuid.UUID, error)
+	UpdateAfterJoin(ctx context.Context, game *model.Game) error
+	GetWaitingGames(ctx context.Context) ([]*model.WaitingGames, error)
+	GetPublicUserInfoById(ctx context.Context, userID uuid.UUID) (*model.PublicUserInfo, error)
+
 }
 
 type MinimaxAlgorithm interface {

@@ -18,6 +18,11 @@ func FromDsToDomain(model *dsModel.GameModel) (*domainModel.Game, error) {
 		return nil, fmt.Errorf("bad UUID")
 	}
 
+	userID, err := uuid.Parse(model.UserID)
+	user2ID, err := uuid.Parse(model.User2ID)
+	if err != nil {
+		return nil, fmt.Errorf("bad user UUID")
+	}
 	var field domainModel.GameField
 
 	if err := json.Unmarshal([]byte(model.Field), &field); err != nil {
@@ -26,12 +31,15 @@ func FromDsToDomain(model *dsModel.GameModel) (*domainModel.Game, error) {
 
 	return &domainModel.Game{
 		ID: id,
+		UserID:	userID,
+		User2ID:	user2ID,
 		Field: field,
 		State: model.State,
 		PlayerTurn: model.PlayerTurn,
 		Size: model.Size,
 		CreatedAt: model.CreatedAt,
 		UpdatedAt: model.UpdatedAt,
+		Opponent: model.Opponent,
 	}, nil
 }
 
@@ -47,11 +55,14 @@ func FromDomainToDs(game *domainModel.Game) (*dsModel.GameModel, error) {
 	
 	return &dsModel.GameModel{
 		ID:        game.ID.String(), 
+		UserID:    game.UserID.String(),
+		User2ID:    game.User2ID.String(),
 		Field:     string(fieldJSON),
 		State:     game.State,
 		PlayerTurn: game.PlayerTurn,
 		Size:      game.Size,
 		CreatedAt: game.CreatedAt,
 		UpdatedAt: game.UpdatedAt,
+		Opponent: game.Opponent,
 	}, nil
 }

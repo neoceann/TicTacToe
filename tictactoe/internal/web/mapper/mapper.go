@@ -12,10 +12,40 @@ func ToMoveResponse(game *domainModel.Game) *webModel.MoveResponse {
 	if game == nil {
 		return nil
 	}
+
+	playerTurnID := game.UserID.String()
+
+	if game.PlayerTurn == domainModel.OPlayerIcon {
+		playerTurnID = game.User2ID.String()
+	}
+
 	return &webModel.MoveResponse{
 		GameID: game.ID.String(),
 		Field:  game.Field,
 		Status: string(game.State),
+		Turn: game.PlayerTurn,
+		TurnID:	playerTurnID,
+	}
+}
+
+func FinishedGameResponse(game *domainModel.Game) *webModel.FinishResponse {
+	if game == nil {
+		return nil
+	}
+
+	playerWinnerID := ""
+	switch game.State {
+	case domainModel.StatePlayerXWon:
+		playerWinnerID = game.UserID.String()
+	case domainModel.StatePlayerOWon:
+		playerWinnerID = game.User2ID.String()
+	}
+
+	return &webModel.FinishResponse{
+		GameID: game.ID.String(),
+		Field: game.Field,
+		Status: string(game.State),
+		WinnerID: playerWinnerID,
 	}
 }
 

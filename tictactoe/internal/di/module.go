@@ -11,6 +11,9 @@ var Module = fx.Module("tictactoe",
 		NewGameService,
 
 		NewGameHandler,
+		NewUserService,
+		NewAuthHandler,
+		NewAuthMiddlewareHandler,
 		NewRouter,
 	),
 	
