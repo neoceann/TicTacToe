@@ -1,38 +1,49 @@
-Регистрация:
+Пример запросов для Windows.
+
+
+* Регистрация:
 
 curl.exe -X POST http://localhost:8080/auth/signup -H "Content-Type: application/json" -d "{\`"login\`":\`"player1\`",\`"password\`":\`"123\`"}"
 
+Будет создан пользователь "player1" с паролем "123"
 
-Авторизация:
+
+* Авторизация:
 
 curl.exe -X POST http://localhost:8080/auth/signin -u "player1:123"
 
 
-Создать игру:
+* Создать игру:
 
 curl.exe -X POST http://localhost:8080/game -u "player1:123" -d "{\`"opponent\`":\`"Human\`"}"
 
-
-Подключиться:
-
-curl.exe -X POST http://localhost:8080/game/join/123 -u "player2:123"
+"Human" - для игры "против игрока"
+"AI" - для игры против компьютера.
 
 
-Сделать ход:
-
-curl.exe -X POST http://localhost:8080/game/123 -u "player1:123" -H "Content-Type: application/json" -d "{\`"field\`":[[1, 0, 0],[0, 0, 0],[0, 0, 0]]}"
+> {gameID} и {userID} отображаются в теле ответа.
 
 
-Получить инфо об игре:
+* Подключиться к созданной игре (в случае игры против игрока):
 
-curl.exe -X GET http://localhost:8080/game/123 -u "player1:123"
+curl.exe -X POST http://localhost:8080/game/join/{gameID} -u "player2:123"
 
 
-Получить инфо об играх в ожидании:
+* Сделать ход:
+
+curl.exe -X POST http://localhost:8080/game/{gameID} -u "player1:123" -H "Content-Type: application/json" -d "{\`"field\`":[[1, 0, 0],[0, 0, 0],[0, 0, 0]]}"
+
+
+* Получить инфо об игре:
+
+curl.exe -X GET http://localhost:8080/game/{gameID} -u "player1:123"
+
+
+* Получить инфо об играх в ожидании (созданные игры "против игрока", но второй игрок еще не подключился):
 
 curl.exe -X GET http://localhost:8080/waiting -u "player1:123"
 
 
-Получить инфо о пользователе:
+* Получить инфо о пользователе:
 
-curl.exe -X GET http://localhost:8080/user/25f61bdf-5fd9-434d-a772-fe4248307fee -u "player1:123"
+curl.exe -X GET http://localhost:8080/user/{userID} -u "player1:123"
