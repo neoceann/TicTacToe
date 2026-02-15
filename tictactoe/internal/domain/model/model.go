@@ -1,30 +1,63 @@
 package model
 
 import (
-	"time"
 	"fmt"
+	"time"
+
 	"github.com/google/uuid"
 )
 
 const FieldSize int = 3
+const HumanOpponent string = "Human"
+const AIOpponent string = "AI"
+
+const XPlayerIcon int = 1 //X
+const OPlayerIcon int = 2 //O
 
 type GameField [][]int
 
 const (
 	StateInProgress = "Game in progress"
-	StatePlayerWon = "Player won"
+    StateWaitingForPlayer = "Waiting for player O"
+	StatePlayerXWon = "Player X won"
+	StatePlayerOWon = "Player O won"
 	StateAIWon = "AI won"
 	StateDraw = "Draw"
 )
 
 type Game struct {
 	ID        uuid.UUID
+    UserID    uuid.UUID
+    User2ID    uuid.UUID
 	Field     GameField
 	State     string
 	PlayerTurn int
 	Size      int
 	CreatedAt time.Time
 	UpdatedAt time.Time
+    Opponent string
+}
+
+type WaitingGames struct {
+    ID uuid.UUID
+    UserID uuid.UUID
+}
+
+type PublicUserInfo struct {
+	ID string
+	Login string
+}
+
+type FinishedGamesInfo struct {
+    GameID string
+    State string
+    Opponent string
+    CreatedAt time.Time
+}
+
+type PlayerWinrateInfo struct {
+    ID string
+    Rating float64
 }
 
 func NewField(size int) GameField {
@@ -38,6 +71,8 @@ func NewField(size int) GameField {
 func (g *Game) DeepCopy() *Game {
     return &Game{
         ID:         g.ID,
+        UserID:     g.UserID,
+        User2ID:     g.User2ID,
         Field:      g.Field.DeepCopy(),
         State:      g.State,
         PlayerTurn: g.PlayerTurn,
